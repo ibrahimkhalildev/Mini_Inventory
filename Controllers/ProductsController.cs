@@ -20,17 +20,17 @@ namespace MiniInventoryManagementSystem.Controllers
         }
 
         // GET: Products
-        public async Task<IActionResult> Index(string searchName, string category)
+        public async Task<IActionResult> Index(string searchName, string category, int page = 1)
         {
+            int pageSize = 10;
+
             var productsQuery = _context.Products.AsQueryable();
 
-            // Search by Name (if any)
             if (!string.IsNullOrEmpty(searchName))
             {
                 productsQuery = productsQuery.Where(p => p.Name.Contains(searchName));
             }
 
-            // Filter by Category (if any)
             if (!string.IsNullOrEmpty(category) && category != "All")
             {
                 if (Enum.TryParse(category, out CategoryName selectedCategory))
@@ -39,15 +39,25 @@ namespace MiniInventoryManagementSystem.Controllers
                 }
             }
 
-            // Populate dropdown with CategoryName enum values
-            var categories = Enum.GetNames(typeof(CategoryName)).ToList();
-            ViewBag.Categories = new SelectList(categories);
-            ViewBag.SelectedCategory = category;
+            int totalItems = await productsQuery.CountAsync();
+
+            var products = await productsQuery
+                .OrderBy(p => p.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+            ViewBag.CurrentPage = page;
             ViewBag.SearchName = searchName;
+            ViewBag.SelectedCategory = category;
 
-            return View(await productsQuery.ToListAsync());
+            var categories = Enum.GetNames(typeof(CategoryName)).ToList();
+            ViewBag.Categories = categories;
+
+            return View(products);
         }
-
 
         // GET: Products/Details/5
         public async Task<IActionResult> Details(int? id)
@@ -74,8 +84,6 @@ namespace MiniInventoryManagementSystem.Controllers
         }
 
         // POST: Products/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name,Category,Price,Quantity")] Product product)
@@ -106,8 +114,6 @@ namespace MiniInventoryManagementSystem.Controllers
         }
 
         // POST: Products/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Category,Price,Quantity")] Product product)
