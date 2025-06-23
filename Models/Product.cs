@@ -14,6 +14,7 @@ namespace MiniInventoryManagementSystem.Models
         public required CategoryName Category { get; set; }
 
         [Required(ErrorMessage = "Price is required")]
+        [Range(0.01, 1000000, ErrorMessage = "Price must be between 0.01 and 100000")]
         public float Price { get; set; }
 
         [Range(0, 10000, ErrorMessage = "Quantity must be between 0 and 10,000")]
